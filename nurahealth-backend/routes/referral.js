@@ -1,5 +1,7 @@
 const express = require("express");
 const router = express.Router();
+const path = require("path");
+const createReferralDocx = require("../utils/createReferralDocx");
 
 router.post("/generate", async (req, res) => {
   const { content } = req.body;
@@ -8,12 +10,20 @@ router.post("/generate", async (req, res) => {
     return res.status(400).json({ error: "Missing letter content" });
   }
 
-  console.log("Received referral content:", content);
+  try {
+    // Create DOCX file
+    const filePath = await createReferralDocx(content, "referral_letter.docx");
 
-  // Temporary placeholder link — will later return a real Google Drive link
-  const downloadUrl = "https://placeholder.link.com/letter.docx";
+    // TEMP placeholder link (we’ll replace with real Google Drive link in Step 3C)
+    const downloadUrl = "https://placeholder.link.com/referral_letter.docx";
 
-  return res.status(200).json({ downloadUrl });
+    console.log("✅ Referral letter generated at:", filePath);
+
+    return res.status(200).json({ downloadUrl });
+  } catch (err) {
+    console.error("❌ Failed to generate referral letter:", err);
+    return res.status(500).json({ error: "Server error creating letter" });
+  }
 });
 
 module.exports = router;
