@@ -1,8 +1,8 @@
 const express = require("express");
 const router = express.Router();
-const path = require("path");
 const createReferralDocx = require("../utils/createReferralDocx");
 const createTranscriptPdf = require("../utils/createTranscriptPdf");
+const uploadToDrive = require("../utils/uploadToDrive"); // NEW
 
 router.post("/generate", async (req, res) => {
   const { content, transcript } = req.body;
@@ -12,24 +12,20 @@ router.post("/generate", async (req, res) => {
   }
 
   try {
-    // Create both files
     const referralDocxPath = await createReferralDocx(content, "referral_letter.docx");
     const transcriptPdfPath = await createTranscriptPdf(transcript, "chat_transcript.pdf");
 
-    // TEMP links (to be replaced with Google Drive upload in next step)
-    const downloadUrls = {
-      referralLetter: "https://placeholder.link.com/referral_letter.docx",
-      chatTranscript: "https://placeholder.link.com/chat_transcript.pdf"
-    };
+    // 🆕 Upload to Google Drive
+    const referralLink = await uploadToDrive(referralDocxPath, "referral_letter.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+    const transcriptLink = await uploadToDrive(transcriptPdfPath, "chat_transcript.pdf", "application/pdf");
 
-    console.log("✅ Files generated:");
-    console.log(" - Referral:", referralDocxPath);
-    console.log(" - Transcript:", transcriptPdfPath);
-
-    return res.status(200).json(downloadUrls);
+    return res.status(200).json({
+      referralLetter: referralLink,
+      chatTranscript: transcriptLink
+    });
   } catch (err) {
-    console.error("❌ Failed to generate files:", err);
-    return res.status(500).json({ error: "Server error generating files" });
+    console.error("❌ Error:", err);
+    return res.status(500).json({ error: "Failed to generate or upload files" });
   }
 });
 
